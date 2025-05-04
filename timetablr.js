@@ -19,6 +19,14 @@ let manualHalls = [];
 let csvHalls = [];
 let halls = manualHalls; // Default to manual
 
+// Add this near the top of the file, after the hall variables
+const manualToggleBtn = document.getElementById('manual-toggle-btn');
+const csvToggleBtn = document.getElementById('csv-toggle-btn');
+const manualInputSection = document.getElementById('manual-input-section');
+const csvInputSection = document.getElementById('csv-input-section');
+const hallCsvInput = document.getElementById('hall-csv');
+const hallCsvSummaryDiv = document.getElementById('hall-csv-summary');
+
 // --- Hall available date ranges ---
 let hallAvailableRanges = [];
 const hallAvailableList = document.getElementById('hall-available-list');
@@ -136,16 +144,42 @@ function renderExamList() {
     examList.innerHTML = '';
     exams.forEach((exam, idx) => {
         const li = document.createElement('li');
-        li.textContent = `${exam.id} (${exam.degree}, ${exam.duration}h, ${exam.numPeople} students${exam.twosession ? ', 2-session' : ''}${exam.special ? ', special' : ''}${exam.requirements.length ? ', req: ' + exam.requirements.join('; ') : ''})`;
+        li.className = 'entry-card';
+        
+        // Create main display (condensed info)
+        const span = document.createElement('span');
+        span.textContent = `${exam.id} (${exam.degree})`;
+        li.appendChild(span);
+
+        // Create remove button
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
-        removeBtn.style.marginLeft = '1rem';
-        removeBtn.onclick = () => {
+        removeBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent triggering card click
             exams.splice(idx, 1);
             renderExamList();
         };
         li.appendChild(removeBtn);
+
+        // Create details section
+        const details = document.createElement('div');
+        details.className = 'entry-details';
+        const studentText = exam.numPeople === 1 ? 'student' : 'students';
+        details.innerHTML = `
+            <p><strong>Duration:</strong> ${exam.duration}h</p>
+            <p><strong>Students:</strong> ${exam.numPeople} ${studentText}</p>
+            <p><strong>Two-session:</strong> ${exam.twosession ? 'Yes' : 'No'}</p>
+            <p><strong>Special Needs:</strong> ${exam.special ? 'Yes' : 'No'}</p>
+            ${exam.requirements.length ? `<p><strong>Requirements:</strong> ${exam.requirements.join(', ')}</p>` : ''}
+        `;
+        
+        // Add click handler for expanding/collapsing
+        li.onclick = () => {
+            details.classList.toggle('show');
+        };
+
         examList.appendChild(li);
+        examList.appendChild(details);
     });
 }
 
@@ -355,11 +389,32 @@ if (classOptimizeBtn) {
 }
 
 // --- Hall Details CSV Upload ---
-const hallCsvInput = document.getElementById('hall-csv');
-const hallCsvSummaryDiv = document.getElementById('hall-csv-summary');
 
+// Add the toggle functionality
+if (manualToggleBtn && csvToggleBtn) {
+    manualToggleBtn.addEventListener('click', () => {
+        manualToggleBtn.classList.add('active');
+        csvToggleBtn.classList.remove('active');
+        manualInputSection.style.display = 'flex';
+        csvInputSection.style.display = 'none';
+        halls = manualHalls;
+        renderHallList();
+    });
+
+    csvToggleBtn.addEventListener('click', () => {
+        csvToggleBtn.classList.add('active');
+        manualToggleBtn.classList.remove('active');
+        csvInputSection.style.display = 'flex';
+        manualInputSection.style.display = 'none';
+        halls = csvHalls;
+        renderHallList();
+    });
+}
+
+// Update CSV upload handler
 if (hallCsvInput) {
     hallCsvInput.addEventListener('change', function(e) {
+        console.log('Hall CSV file selected');
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -368,6 +423,77 @@ if (hallCsvInput) {
             parseHallCsv(text);
         };
         reader.readAsText(file);
+    });
+}
+
+// Update the hall form handler
+if (hallForm) {
+    hallForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Hall form submitted');
+        const name = hallNameInput.value.trim();
+        const size = parseInt(hallSizeInput.value);
+        const features = [];
+        if (hallComputerInput.checked) features.push('computer');
+        if (hallAccessInput.checked) features.push('accessibility');
+        let available = [];
+        if (hallAvailableRanges && hallAvailableRanges.length > 0) {
+            available = [...hallAvailableRanges];
+        }
+        if (name && size) {
+            console.log('Adding new hall:', { name, size, features, available });
+            manualHalls.push({ name, size, features, available });
+            halls = manualHalls;
+            renderHallList();
+            hallForm.reset();
+            if (hallAvailableRanges) hallAvailableRanges.length = 0;
+            if (typeof renderHallAvailableList === 'function') renderHallAvailableList();
+        }
+    });
+}
+
+function renderHallList() {
+    console.log('Rendering hall list, current halls:', halls);
+    hallList.innerHTML = '';
+    const currentHalls = halls || manualHalls;
+    
+    currentHalls.forEach((hall, idx) => {
+        const li = document.createElement('li');
+        li.className = 'entry-card';
+        
+        // Create main display (condensed info)
+        const span = document.createElement('span');
+        span.textContent = `${hall.name} (Capacity: ${hall.size})`;
+        li.appendChild(span);
+
+        // Create remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation(); // Prevent triggering card click
+            currentHalls.splice(idx, 1);
+            renderHallList();
+        };
+        li.appendChild(removeBtn);
+
+        // Create details section
+        const details = document.createElement('div');
+        details.className = 'entry-details';
+        details.innerHTML = `
+            ${hall.features && hall.features.length ? `<p><strong>Features:</strong> ${hall.features.join(', ')}</p>` : ''}
+            ${hall.available && hall.available.length ? `<p><strong>Available Dates:</strong></p>
+            <ul style="margin-top: 0.5em;">
+                ${hall.available.map(r => `<li>${r.start.replace('T', ' ')} to ${r.end.replace('T', ' ')}</li>`).join('')}
+            </ul>` : ''}
+        `;
+        
+        // Add click handler for expanding/collapsing
+        li.onclick = () => {
+            details.classList.toggle('show');
+        };
+
+        hallList.appendChild(li);
+        hallList.appendChild(details);
     });
 }
 
@@ -410,11 +536,11 @@ function parseHallCsv(text) {
             console.warn('Skipping line (missing required fields):', line);
             continue;
         }
-        const featuresArr = [];
-        if (computer.toLowerCase() === 'true') featuresArr.push('computer');
-        if (accessibility.toLowerCase() === 'true') featuresArr.push('accessibility');
-        if (projector.toLowerCase() === 'true') featuresArr.push('projector');
-        if (whiteboard.toLowerCase() === 'true') featuresArr.push('whiteboard');
+        const features = [];
+        if (computer.toLowerCase() === 'true') features.push('computer');
+        if (accessibility.toLowerCase() === 'true') features.push('accessibility');
+        if (projector.toLowerCase() === 'true') features.push('projector');
+        if (whiteboard.toLowerCase() === 'true') features.push('whiteboard');
         let availableArr = [];
         if (available) {
             availableArr = available.split(';').map(pair => {
@@ -422,12 +548,11 @@ function parseHallCsv(text) {
                 return start && end ? { start, end } : null;
             }).filter(Boolean);
         }
-        csvHalls.push({ name, size: parseInt(size), features: featuresArr, available: availableArr });
+        csvHalls.push({ name, size: parseInt(size), features: features, available: availableArr });
         count++;
     }
-    if (getSelectedHallInputMethod() === 'csv') {
-        renderHallList();
-    }
+    halls = csvHalls;
+    renderHallList();
     hallCsvSummaryDiv.innerHTML = `<strong>Loaded:</strong> ${count} halls from CSV.`;
 }
 
@@ -488,6 +613,7 @@ function parseExamCsv(text) {
     let count = 0;
     const lines = text.split(/\r?\n/).filter(line => line.trim());
     console.log('parseExamCsv: total lines (including header):', lines.length);
+    exams = []; // Reset exams array when loading CSV
     for (let i = 1; i < lines.length; i++) { // skip header
         const line = lines[i];
         if (!line.trim()) continue;
@@ -564,17 +690,9 @@ const showExamCsvBtn = document.getElementById('show-exam-csv-btn');
 const examCsvPreview = document.getElementById('exam-csv-preview');
 if (showExamCsvBtn && examCsvPreview) {
     showExamCsvBtn.addEventListener('click', function() {
-        if (exams.length === 0) {
-            examCsvPreview.innerHTML = '<em>No exam data loaded.</em>';
-            return;
-        }
-        let html = '<table style="width:100%;border-collapse:collapse;"><tr>';
-        html += '<th>ID</th><th>Degree</th><th>Duration</th><th>Num Students</th><th>2-Session</th><th>Special</th><th>Features</th></tr>';
-        exams.forEach(e => {
-            html += `<tr><td>${e.id}</td><td>${e.degree}</td><td>${e.duration}</td><td>${e.numPeople}</td><td>${e.twosession}</td><td>${e.special}</td><td>${e.requirements ? e.requirements.join(', ') : ''}</td></tr>`;
-        });
-        html += '</table>';
-        examCsvPreview.innerHTML = html;
+        examCsvPreview.classList.toggle('show');
+        showExamCsvBtn.textContent = examCsvPreview.classList.contains('show') ? 
+            'Hide Uploaded Exam CSV Data' : 'Show Uploaded Exam CSV Data';
     });
 }
 
@@ -582,17 +700,9 @@ const showHallCsvBtn = document.getElementById('show-hall-csv-btn');
 const hallCsvPreview = document.getElementById('hall-csv-preview');
 if (showHallCsvBtn && hallCsvPreview) {
     showHallCsvBtn.addEventListener('click', function() {
-        if (halls.length === 0) {
-            hallCsvPreview.innerHTML = '<em>No hall data loaded.</em>';
-            return;
-        }
-        let html = '<table style="width:100%;border-collapse:collapse;"><tr>';
-        html += '<th>Name</th><th>Capacity</th><th>Features</th><th>Available Dates</th></tr>';
-        halls.forEach(h => {
-            html += `<tr><td>${h.name}</td><td>${h.size}</td><td>${h.features ? h.features.join(', ') : ''}</td><td>${h.available ? h.available.map(r => r.start + ' to ' + r.end).join('; ') : ''}</td></tr>`;
-        });
-        html += '</table>';
-        hallCsvPreview.innerHTML = html;
+        hallCsvPreview.classList.toggle('show');
+        showHallCsvBtn.textContent = hallCsvPreview.classList.contains('show') ? 
+            'Hide Uploaded Hall CSV Data' : 'Show Uploaded Hall CSV Data';
     });
 }
 
@@ -600,62 +710,7 @@ console.log(exams)
 
 getEventListeners(document.getElementById('show-exam-csv-btn'))
 
-if (hallForm) {
-    hallForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = hallNameInput.value.trim();
-        const size = parseInt(hallSizeInput.value);
-        if (name && size) {
-            manualHalls.push({ name, size, features: [] });
-            if (getSelectedHallInputMethod() === 'manual') {
-                renderHallList();
-            }
-            hallForm.reset();
-        }
-    });
-}
-
 function getSelectedHallInputMethod() {
     return document.querySelector('input[name="hall-input-method"]:checked').value;
 }
-
-function renderHallList() {
-    hallList.innerHTML = '';
-    const hallsToShow = getSelectedHallInputMethod() === 'manual' ? manualHalls : csvHalls;
-    hallsToShow.forEach((hall, idx) => {
-        const li = document.createElement('li');
-        li.textContent = `${hall.name} (${hall.size})`;
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'Remove';
-        removeBtn.onclick = () => {
-            hallsToShow.splice(idx, 1);
-            renderHallList();
-        };
-        li.appendChild(removeBtn);
-        hallList.appendChild(li);
-    });
-}
-
-// Toggle between manual and CSV input for halls
-const hallManualSection = document.getElementById('hall-manual-section');
-const hallCsvSection = document.getElementById('hall-csv-section');
-const hallInputRadios = document.getElementsByName('hall-input-method');
-
-function updateHallInputSections() {
-    if (getSelectedHallInputMethod() === 'manual') {
-        hallManualSection.classList.remove('dimmed');
-        hallCsvSection.classList.add('dimmed');
-    } else {
-        hallManualSection.classList.add('dimmed');
-        hallCsvSection.classList.remove('dimmed');
-    }
-    renderHallList();
-}
-
-hallInputRadios.forEach(radio => {
-    radio.addEventListener('change', updateHallInputSections);
-});
-
-// On page load
-updateHallInputSections();
 

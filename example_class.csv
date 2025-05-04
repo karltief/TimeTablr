@@ -1,0 +1,4 @@
+CourseID,Degree,Sections,WeeklyHours,Instructor,Computer,Accessibility,Projector,Whiteboard
+CS101,BSc CS,2,3,Dr. Smith,true,false,true,true
+MATH201,BSc Math,1,4,Dr. Johnson,false,false,true,true
+PHYS102,BSc Physics,3,2,Dr. Brown,true,true,true,true 

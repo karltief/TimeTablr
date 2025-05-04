@@ -17,20 +17,75 @@
             padding: 0.7em 1.2em;
             margin-bottom: 0.7em;
             min-width: 320px;
-            max-width: 340px;
+            max-width: 500px;
             font-size: 1.05em;
-            height: 48px; /* fixed height for consistency */
+            height: 48px;
             box-sizing: border-box;
+            cursor: pointer;
         }
         .entry-card span {
             color: #1976d2;
-            text-decoration: underline;
-            cursor: pointer;
         }
-        #exam-list, #hall-list {
+        .entry-card button {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 12px;
+            cursor: pointer;
+            margin-left: 1rem;
+            font-size: 0.9em;
+        }
+        .entry-details {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1em;
+            margin-top: -0.5em;
+            margin-bottom: 1em;
+            font-size: 0.95em;
+            display: none;
+            min-width: 320px;
+            max-width: 500px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .entry-details.show {
+            display: block;
+        }
+        #exam-list, #hall-list, #class-list {
             padding: 0;
             margin: 0;
             list-style: none;
+            width: 100%;
+        }
+        .csv-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            width: 100%;
+        }
+        .csv-preview {
+            display: none;
+            width: 100%;
+        }
+        .csv-preview.show {
+            display: block;
+        }
+        .input-section {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .csv-flex-row {
+            display: flex;
+            gap: 2rem;
+            justify-content: space-between;
+        }
+        .csv-col {
+            flex: 1;
+            min-width: 45%;
+            max-width: 48%;
         }
     </style>
 </head>
@@ -84,7 +139,7 @@
                 </div>
                 <div style="flex: 1 1 320px; min-width: 300px;">
                     <h3>Hall Entry</h3>
-                    <form id="hall-form" onsubmit="return handleHallSubmit(event);">
+                    <form id="hall-form">
                         <input type="text" id="hall-name" placeholder="Hall Name" required />
                         <input type="number" id="hall-size" placeholder="Capacity" min="1" required />
                         <label><input type="checkbox" id="hall-computer" /> Computer Lab</label>
@@ -105,19 +160,23 @@
             <div id="csv-input-section" class="input-section csv-flex-row" style="display: none;">
                 <div class="csv-col">
                     <h3>Exam Details (CSV)</h3>
-                    <a href="example_exam.csv" download class="csv-template-link">Download Template CSV</a>
-                    <input type="file" id="exam-csv" accept=".csv" />
-                    <div id="exam-csv-summary"></div>
-                    <button type="button" id="show-exam-csv-btn" class="nav-btn">Show Uploaded Exam CSV Data</button>
-                    <div id="exam-csv-preview"></div>
+                    <div class="csv-section">
+                        <a href="example_exam.csv" download="example_exam.csv" class="csv-template-link">Download Template CSV</a>
+                        <input type="file" id="exam-csv" accept=".csv" />
+                        <div id="exam-csv-summary"></div>
+                        <button type="button" id="show-exam-csv-btn" class="nav-btn">Show Uploaded Exam CSV Data</button>
+                    </div>
+                    <div id="exam-csv-preview" class="csv-preview"></div>
                 </div>
                 <div class="csv-col">
                     <h3>Hall Details (CSV)</h3>
-                    <a href="example_hall.csv" download class="csv-template-link">Download Template CSV</a>
-                    <input type="file" id="hall-csv" accept=".csv" />
-                    <div id="hall-csv-summary"></div>
-                    <button type="button" id="show-hall-csv-btn" class="nav-btn">Show Uploaded Hall CSV Data</button>
-                    <div id="hall-csv-preview"></div>
+                    <div class="csv-section">
+                        <a href="example_hall.csv" download="example_hall.csv" class="csv-template-link">Download Template CSV</a>
+                        <input type="file" id="hall-csv" accept=".csv" />
+                        <div id="hall-csv-summary"></div>
+                        <button type="button" id="show-hall-csv-btn" class="nav-btn">Show Uploaded Hall CSV Data</button>
+                    </div>
+                    <div id="hall-csv-preview" class="csv-preview"></div>
                 </div>
             </div>
 
@@ -135,59 +194,59 @@
         </section>
         <section id="class-page" style="display:none;">
             <h2>Class Scheduling Optimizer</h2>
-            <form id="class-form">
-                <input type="text" id="class-id" placeholder="Course ID" required />
-                <input type="text" id="class-degree" placeholder="Degree" required />
-                <input type="number" id="class-sections" placeholder="Sections" min="1" required />
-                <input type="number" id="class-hours" placeholder="Weekly Hours" min="1" required />
-                <input type="text" id="class-instructor" placeholder="Instructor" required />
-                <div class="dropdown-multicheck">
-                    <button type="button" id="class-feature-dropdown-btn">Required Features ▼</button>
-                    <div id="class-feature-dropdown-list" class="dropdown-list">
-                        <label><input type="checkbox" class="class-feature" value="computer"> Computer Lab</label>
-                        <label><input type="checkbox" class="class-feature" value="accessibility"> Accessibility</label>
-                        <label><input type="checkbox" class="class-feature" value="projector"> Projector</label>
-                        <label><input type="checkbox" class="class-feature" value="whiteboard"> Whiteboard</label>
+            <div id="class-input-toggle" style="display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 2rem;">
+                <button id="class-manual-toggle-btn" class="toggle-btn nav-btn active">Manual</button>
+                <button id="class-csv-toggle-btn" class="toggle-btn nav-btn">CSV Upload</button>
+            </div>
+
+            <!-- Manual Input Section -->
+            <div id="class-manual-section" class="input-section">
+                <form id="class-form">
+                    <input type="text" id="class-id" placeholder="Course ID" required />
+                    <input type="text" id="class-degree" placeholder="Degree" required />
+                    <input type="number" id="class-sections" placeholder="Sections" min="1" required />
+                    <input type="number" id="class-hours" placeholder="Weekly Hours" min="1" required />
+                    <input type="text" id="class-instructor" placeholder="Instructor" required />
+                    <div class="dropdown-multicheck">
+                        <button type="button" id="class-feature-dropdown-btn">Required Features ▼</button>
+                        <div id="class-feature-dropdown-list" class="dropdown-list">
+                            <label><input type="checkbox" class="class-feature" value="computer"> Computer Lab</label>
+                            <label><input type="checkbox" class="class-feature" value="accessibility"> Accessibility</label>
+                            <label><input type="checkbox" class="class-feature" value="projector"> Projector</label>
+                            <label><input type="checkbox" class="class-feature" value="whiteboard"> Whiteboard</label>
+                        </div>
                     </div>
-                </div>
-                <button type="submit">Add Class</button>
-            </form>
-            <div class="or-separator"><span>or</span></div>
-            <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; justify-content: center; margin-bottom: 1.5rem;">
-                <div class="csv-upload-card">
-                    <h3>Upload Class Details (CSV)</h3>
-                    <a href="example_class.csv" download class="csv-template-link">Download Template CSV</a>
+                    <button type="submit" class="nav-btn">Add Class</button>
+                </form>
+            </div>
+
+            <!-- CSV Input Section -->
+            <div id="class-csv-section" class="input-section" style="display: none;">
+                <div class="csv-section">
+                    <a href="example_class.csv" download="example_class.csv" class="csv-template-link">Download Template CSV</a>
                     <input type="file" id="class-csv" accept=".csv" />
                     <div id="class-csv-summary"></div>
+                    <button type="button" id="show-class-csv-btn" class="nav-btn">Show Uploaded Class CSV Data</button>
                 </div>
+                <div id="class-csv-preview" class="csv-preview"></div>
             </div>
+
             <ul id="class-list"></ul>
-            <button id="class-optimize-btn">Optimize Class Schedule</button>
+            <button id="class-optimize-btn" class="nav-btn">Optimize Class Schedule</button>
             <h3>Optimized Class Timetable</h3>
             <div id="class-timetable"></div>
         </section>
     </main>
     <script src="timetablr.js"></script>
     <script>
-        const manualToggleBtn = document.getElementById('manual-toggle-btn');
-        const csvToggleBtn = document.getElementById('csv-toggle-btn');
-        const manualInputSection = document.getElementById('manual-input-section');
-        const csvInputSection = document.getElementById('csv-input-section');
+        // Remove the following functions and event listeners:
+        // - handleHallSubmit
+        // - handleExamSubmit
+        // - manual/csv toggle event listeners (if duplicated in timetablr.js)
+        // - exam/hall form submit handlers
+        // Keep only the timetable view toggle and rendering logic if not duplicated in timetablr.js.
 
-        manualToggleBtn.addEventListener('click', function() {
-            manualToggleBtn.classList.add('active');
-            csvToggleBtn.classList.remove('active');
-            manualInputSection.style.display = 'flex';
-            csvInputSection.style.display = 'none';
-        });
-
-        csvToggleBtn.addEventListener('click', function() {
-            csvToggleBtn.classList.add('active');
-            manualToggleBtn.classList.remove('active');
-            manualInputSection.style.display = 'none';
-            csvInputSection.style.display = 'flex';
-        });
-
+        // --- KEEP: Timetable view toggle logic ---
         const tableViewBtn = document.getElementById('table-view-btn');
         const calendarViewBtn = document.getElementById('calendar-view-btn');
         let lastTimetableData = null; // Store the last timetable for switching views
@@ -306,77 +365,51 @@
             });
         }
 
-        function handleHallSubmit(e) {
-            e.preventDefault();
-            const hallNameInput = document.getElementById('hall-name');
-            const hallSizeInput = document.getElementById('hall-size');
+        document.addEventListener('DOMContentLoaded', function() {
+            const hallForm = document.getElementById('hall-form');
             const hallList = document.getElementById('hall-list');
-            const name = hallNameInput.value.trim();
-            const size = parseInt(hallSizeInput.value);
 
-            if (name && size) {
+            // Add class scheduling CSV toggle functionality
+            const classManualBtn = document.getElementById('class-manual-toggle-btn');
+            const classCsvBtn = document.getElementById('class-csv-toggle-btn');
+            const classManualSection = document.getElementById('class-manual-section');
+            const classCsvSection = document.getElementById('class-csv-section');
+
+            classManualBtn.addEventListener('click', function() {
+                classManualBtn.classList.add('active');
+                classCsvBtn.classList.remove('active');
+                classManualSection.style.display = 'block';
+                classCsvSection.style.display = 'none';
+            });
+
+            classCsvBtn.addEventListener('click', function() {
+                classCsvBtn.classList.add('active');
+                classManualBtn.classList.remove('active');
+                classCsvSection.style.display = 'block';
+                classManualSection.style.display = 'none';
+            });
+
+            hallForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent page refresh
+
+                // Get values
+                const hallName = document.getElementById('hall-name').value.trim();
+                const hallSize = document.getElementById('hall-size').value.trim();
+
+                if (!hallName || !hallSize) return; // Simple validation
+
+                // Create hall card
                 const li = document.createElement('li');
                 li.className = 'entry-card';
-                const span = document.createElement('span');
-                span.innerHTML = `<b>${name}</b> (${size})`;
-                const removeBtn = document.createElement('button');
-                removeBtn.textContent = 'Remove';
-                removeBtn.className = 'nav-btn small';
-                removeBtn.style.marginLeft = '1rem';
-                removeBtn.onclick = function() {
-                    hallList.removeChild(li);
-                };
-                li.appendChild(span);
-                li.appendChild(removeBtn);
+                li.innerHTML = `<b>${hallName}</b> (Capacity: ${hallSize})`;
+
+                // Add to hall list
                 hallList.appendChild(li);
 
-                // Reset the form
-                hallNameInput.value = '';
-                hallSizeInput.value = '';
-                document.getElementById('hall-computer').checked = false;
-                document.getElementById('hall-access').checked = false;
-            }
-            return false; // Prevent form submission
-        }
-
-        function handleExamSubmit(e) {
-            e.preventDefault();
-            const examId = document.getElementById('exam-id').value;
-            const examDegree = document.getElementById('exam-degree').value;
-            const duration = document.getElementById('duration').value;
-            const numStudents = document.getElementById('num-students').value;
-            const twosession = document.getElementById('exam-twosession').checked;
-            const special = document.getElementById('exam-special').checked;
-            const features = Array.from(document.querySelectorAll('.exam-feature:checked')).map(f => f.value);
-            const examList = document.getElementById('exam-list');
-
-            if (examId && examDegree && duration && numStudents) {
-                const li = document.createElement('li');
-                li.className = 'entry-card';
-                const span = document.createElement('span');
-                span.innerHTML = `<b>${examId}</b> (${examDegree}, ${duration}h, ${numStudents} students)`;
-                const removeBtn = document.createElement('button');
-                removeBtn.textContent = 'Remove';
-                removeBtn.className = 'nav-btn small';
-                removeBtn.style.marginLeft = '1rem';
-                removeBtn.onclick = function() {
-                    examList.removeChild(li);
-                };
-                li.appendChild(span);
-                li.appendChild(removeBtn);
-                examList.appendChild(li);
-
-                // Reset the form
-                document.getElementById('exam-id').value = '';
-                document.getElementById('exam-degree').value = '';
-                document.getElementById('duration').value = '';
-                document.getElementById('num-students').value = '';
-                document.getElementById('exam-twosession').checked = false;
-                document.getElementById('exam-special').checked = false;
-                document.querySelectorAll('.exam-feature').forEach(f => f.checked = false);
-            }
-            return false; // Prevent form submission
-        }
+                // Clear form
+                hallForm.reset();
+            });
+        });
     </script>
 </body>
 </html> 

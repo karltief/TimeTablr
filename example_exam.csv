@@ -1,0 +1,19 @@
+ExamID,Degree,Duration,NumStudents,TwoSession,SpecialNeeds,Computer,Accessibility,Projector,Whiteboard
+MATH101,BSc Math,2,30,false,false,true,false,true,true
+CS201,BSc CS,3,45,false,false,true,false,true,true
+PHYS301,BSc Physics,2.5,25,false,false,false,false,true,true
+BIO101,BSc Biology,2,35,false,false,false,false,true,true
+CHEM201,BSc Chemistry,3,40,false,true,false,true,true,true
+ENG101,BA English,2,50,false,false,false,false,true,true
+HIST301,BA History,2.5,30,false,false,false,false,true,true
+PSYCH201,BSc Psychology,2,60,true,false,false,false,true,true
+ECON101,BSc Economics,2,55,false,false,true,false,true,true
+SOC301,BA Sociology,2,40,false,false,false,false,true,true
+ART201,BA Art,3,20,false,false,false,false,true,true
+PHIL101,BA Philosophy,2,25,false,false,false,false,true,true
+STAT301,BSc Statistics,2.5,35,false,false,true,false,true,true
+GEOL201,BSc Geology,2,30,false,false,false,false,true,true
+COMP302,BSc CS,3,40,false,false,true,false,true,true
+MATH202,BSc Math,2,45,true,false,true,false,true,true
+BIO302,BSc Biology,2.5,30,false,true,false,true,true,true
+CHEM301,BSc Chemistry,3,35,false,false,false,false,true,true 
