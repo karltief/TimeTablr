@@ -1,9 +1,9 @@
 Name,Capacity,Computer,Accessibility,Projector,Whiteboard,AvailableDates
-Hall A,100,true,true,true,true,2024-05-01T09:00|2024-05-20T17:00
-Lab 101,30,true,false,true,true,2024-05-01T09:00|2024-05-20T17:00
-Room 202,50,false,true,true,true,2024-05-01T09:00|2024-05-20T17:00
-Main Hall A,120,true,true,true,true,2024-06-01 09:00,2024-06-30 18:00
-Room 101,60,true,false,true,true,2024-06-01 09:00,2024-06-30 18:00
-Lecture Theatre B,90,false,true,true,true,2024-06-01 09:00,2024-06-30 18:00
-Computer Lab 1,40,true,false,true,true,2024-06-01 09:00,2024-06-30 18:00
-Study Hall C,75,false,true,true,true,2024-06-01 09:00,2024-06-30 18:00 
+Hall A,100,true,true,true,true,2024-06-01T09:00|2024-06-30T18:00
+Lab 101,30,true,false,true,true,2024-06-01T09:00|2024-06-30T18:00
+Room 202,50,false,true,true,true,2024-06-01T09:00|2024-06-30T18:00
+Main Hall A,120,true,true,true,true,2024-06-01T09:00|2024-06-30T18:00
+Room 101,60,true,false,true,true,2024-06-01T09:00|2024-06-30T18:00
+Lecture Theatre B,90,false,true,true,true,2024-06-01T09:00|2024-06-30T18:00
+Computer Lab 1,40,true,false,true,true,2024-06-01T09:00|2024-06-30T18:00
+Study Hall C,75,false,true,true,true,2024-06-01T09:00|2024-06-30T18:00 

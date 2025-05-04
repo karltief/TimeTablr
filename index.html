@@ -64,6 +64,7 @@
             gap: 1rem;
             margin-bottom: 1.5rem;
             width: 100%;
+            padding: 1.5rem;
         }
         .csv-preview {
             display: none;
@@ -86,6 +87,40 @@
             flex: 1;
             min-width: 45%;
             max-width: 48%;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid white;
+        }
+        .csv-col h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .period-section {
+            background: #cce4fa;
+            border-radius: 10px;
+            padding: 1.2em 2em;
+            margin: 0 auto 2rem auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            max-width: 800px;
+            width: 100%;
+            justify-content: center;
+        }
+        .period-section input[type="datetime-local"] {
+            padding: 0.5em 1em;
+            border: 2px solid #1976d2;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #1976d2;
+            background: white;
+            width: 200px;
+        }
+        .period-section .form-label {
+            color: #1976d2;
+            font-weight: 500;
+            font-size: 1.1em;
         }
     </style>
 </head>
@@ -106,11 +141,11 @@
             </div>
 
             <div style="width: 100%; display: flex; justify-content: center;">
-                <div id="exam-period-section" class="period-section">
+                <div id="exam-period-section" class="period-section" style="margin: 0 auto;">
                     <label for="exam-start" class="form-label">Exam Period:</label>
-                    <input type="datetime-local" id="exam-start" class="form-input" required>
+                    <input type="datetime-local" id="exam-start" class="form-input" value="2024-06-01T09:00" required>
                     <span class="form-label" style="margin: 0 0.5em;">to</span>
-                    <input type="datetime-local" id="exam-end" class="form-input" required>
+                    <input type="datetime-local" id="exam-end" class="form-input" value="2024-06-30T18:00" required>
                 </div>
             </div>
 
@@ -164,9 +199,7 @@
                         <a href="example_exam.csv" download="example_exam.csv" class="csv-template-link">Download Template CSV</a>
                         <input type="file" id="exam-csv" accept=".csv" />
                         <div id="exam-csv-summary"></div>
-                        <button type="button" id="show-exam-csv-btn" class="nav-btn">Show Uploaded Exam CSV Data</button>
                     </div>
-                    <div id="exam-csv-preview" class="csv-preview"></div>
                 </div>
                 <div class="csv-col">
                     <h3>Hall Details (CSV)</h3>
@@ -174,15 +207,17 @@
                         <a href="example_hall.csv" download="example_hall.csv" class="csv-template-link">Download Template CSV</a>
                         <input type="file" id="hall-csv" accept=".csv" />
                         <div id="hall-csv-summary"></div>
-                        <button type="button" id="show-hall-csv-btn" class="nav-btn">Show Uploaded Hall CSV Data</button>
                     </div>
-                    <div id="hall-csv-preview" class="csv-preview"></div>
                 </div>
             </div>
 
             <div style="display: flex; gap: 2rem; justify-content: center; align-items: flex-start; margin-bottom: 2rem;">
-                <ul id="exam-list" style="flex: 1 1 320px; min-width: 300px;"></ul>
-                <ul id="hall-list" style="flex: 1 1 320px; min-width: 300px;"></ul>
+                <div style="flex: 1 1 320px; min-width: 300px;">
+                    <ul id="exam-list"></ul>
+                </div>
+                <div style="flex: 1 1 320px; min-width: 300px;">
+                    <ul id="hall-list"></ul>
+                </div>
             </div>
             <button id="optimize-btn" class="nav-btn">Optimize Timetable</button>
             <h3>Optimized Timetable</h3>
@@ -366,49 +401,261 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const hallForm = document.getElementById('hall-form');
-            const hallList = document.getElementById('hall-list');
+            // Show/Hide CSV data functionality
+            function setupCsvPreviewToggle(buttonId, previewId) {
+                const button = document.getElementById(buttonId);
+                const preview = document.getElementById(previewId);
+                if (button && preview) {
+                    button.addEventListener('click', function() {
+                        const isShowing = preview.classList.contains('show');
+                        preview.classList.toggle('show');
+                        button.textContent = isShowing ? 
+                            `Show Uploaded ${buttonId.includes('exam') ? 'Exam' : buttonId.includes('hall') ? 'Hall' : 'Class'} CSV Data` : 
+                            `Hide Uploaded ${buttonId.includes('exam') ? 'Exam' : buttonId.includes('hall') ? 'Hall' : 'Class'} CSV Data`;
+                    });
+                }
+            }
 
-            // Add class scheduling CSV toggle functionality
+            // Setup CSV file handling
+            function setupCsvFileHandling(fileInputId, listId, summaryId) {
+                const fileInput = document.getElementById(fileInputId);
+                const list = document.getElementById(listId);
+                const summary = document.getElementById(summaryId);
+                
+                if (fileInput && list && summary) {
+                    fileInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const csvData = e.target.result;
+                                const lines = csvData.split('\n');
+                                const headers = lines[0].split(',');
+                                
+                                // Clear existing list
+                                list.innerHTML = '';
+                                
+                                // Process each line
+                                lines.slice(1).forEach(line => {
+                                    if (line.trim()) {
+                                        const cells = line.split(',');
+                                        const data = {};
+                                        headers.forEach((header, index) => {
+                                            data[header.trim()] = cells[index] ? cells[index].trim() : '';
+                                        });
+                                        
+                                        // Create list item
+                                        const li = document.createElement('li');
+                                        
+                                        if (fileInputId === 'exam-csv') {
+                                            // Format for exam entries
+                                            li.className = 'entry-card';
+                                            li.innerHTML = `
+                                                <span><b>${data.ExamID}</b> (${data.Degree})</span>
+                                                <button onclick="this.parentElement.remove()" class="remove-btn">Remove</button>
+                                            `;
+                                            
+                                            // Create details section
+                                            const details = document.createElement('div');
+                                            details.className = 'entry-details';
+                                            details.innerHTML = `
+                                                <p><b>Duration:</b> ${data.Duration}h</p>
+                                                <p><b>Students:</b> ${data.NumStudents} students</p>
+                                                <p><b>Two-session:</b> ${data.TwoSession}</p>
+                                                <p><b>Special Needs:</b> ${data.SpecialNeeds}</p>
+                                                <p><b>Requirements:</b> ${[
+                                                    data.Computer === 'true' ? 'computer' : '',
+                                                    data.Accessibility === 'true' ? 'accessibility' : '',
+                                                    data.Projector === 'true' ? 'projector' : '',
+                                                    data.Whiteboard === 'true' ? 'whiteboard' : ''
+                                                ].filter(Boolean).join(', ') || 'none'}</p>
+                                            `;
+                                            
+                                            li.addEventListener('click', function(e) {
+                                                if (e.target.tagName !== 'BUTTON') {
+                                                    details.classList.toggle('show');
+                                                }
+                                            });
+                                            
+                                            list.appendChild(li);
+                                            list.appendChild(details);
+                                        } else if (fileInputId === 'hall-csv') {
+                                            // Format for hall entries
+                                            li.className = 'entry-card';
+                                            li.innerHTML = `
+                                                <span><b>${data.Name}</b> (Capacity: ${data.Capacity})</span>
+                                                <button onclick="this.parentElement.remove()" class="remove-btn">Remove</button>
+                                            `;
+                                            
+                                            // Create details section
+                                            const details = document.createElement('div');
+                                            details.className = 'entry-details';
+                                            
+                                            // Handle different date formats
+                                            let availableDates = data.AvailableDates;
+                                            if (availableDates && availableDates.includes(',')) {
+                                                // Handle format with comma-separated dates
+                                                const [start, end] = availableDates.split(',');
+                                                availableDates = `${start} to ${end}`;
+                                            } else if (availableDates && availableDates.includes('|')) {
+                                                // Handle format with pipe-separated dates
+                                                const [start, end] = availableDates.split('|');
+                                                availableDates = `${start} to ${end}`;
+                                            }
+                                            
+                                            details.innerHTML = `
+                                                <p><b>Features:</b> ${[
+                                                    data.Computer === 'true' ? 'computer' : '',
+                                                    data.Accessibility === 'true' ? 'accessibility' : '',
+                                                    data.Projector === 'true' ? 'projector' : '',
+                                                    data.Whiteboard === 'true' ? 'whiteboard' : ''
+                                                ].filter(Boolean).join(', ') || 'none'}</p>
+                                                <p><b>Available:</b> ${availableDates || 'Not specified'}</p>
+                                            `;
+                                            
+                                            li.addEventListener('click', function(e) {
+                                                if (e.target.tagName !== 'BUTTON') {
+                                                    details.classList.toggle('show');
+                                                }
+                                            });
+                                            
+                                            list.appendChild(li);
+                                            list.appendChild(details);
+                                        }
+                                    }
+                                });
+                                
+                                summary.textContent = `Loaded ${lines.length - 1} entries from CSV file.`;
+                            };
+                            reader.readAsText(file);
+                        }
+                    });
+                }
+            }
+
+            // Initialize all CSV preview toggles
+            setupCsvPreviewToggle('show-exam-csv-btn', 'exam-csv-preview');
+            setupCsvPreviewToggle('show-hall-csv-btn', 'hall-csv-preview');
+            setupCsvPreviewToggle('show-class-csv-btn', 'class-csv-preview');
+
+            // Initialize all CSV file handlers
+            setupCsvFileHandling('exam-csv', 'exam-list', 'exam-csv-summary');
+            setupCsvFileHandling('hall-csv', 'hall-list', 'hall-csv-summary');
+            setupCsvFileHandling('class-csv', 'class-list', 'class-csv-summary');
+
+            // Update button text to British English
+            document.querySelectorAll('button').forEach(button => {
+                if (button.textContent.includes('Optimize')) {
+                    button.textContent = button.textContent.replace('Optimize', 'Optimise');
+                }
+                if (button.textContent.includes('Optimized')) {
+                    button.textContent = button.textContent.replace('Optimized', 'Optimised');
+                }
+            });
+
+            // Sort timetable by date
+            function sortTimetableByDate(timetable) {
+                return timetable.sort((a, b) => {
+                    if (!a.date || !b.date) return 0;
+                    return new Date(a.date) - new Date(b.date);
+                });
+            }
+
+            // Update renderTimetable function to sort by date
+            const originalRenderTimetable = window.renderTimetable;
+            window.renderTimetable = function(timetable) {
+                const sortedTimetable = sortTimetableByDate(timetable);
+                originalRenderTimetable(sortedTimetable);
+            };
+
+            // Class Schedule Optimisation Logic
+            function optimiseClassSchedule(classes, halls) {
+                // Sort classes by constraints (most constrained first)
+                classes.sort((a, b) => {
+                    const aConstraints = (a.computer ? 1 : 0) + (a.accessibility ? 1 : 0) + (a.sections * a.weeklyHours);
+                    const bConstraints = (b.computer ? 1 : 0) + (b.accessibility ? 1 : 0) + (b.sections * b.weeklyHours);
+                    return bConstraints - aConstraints;
+                });
+
+                const schedule = [];
+                const timeSlots = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+                const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+                classes.forEach(classItem => {
+                    const remainingHours = classItem.weeklyHours * classItem.sections;
+                    let assignedHours = 0;
+
+                    while (assignedHours < remainingHours) {
+                        // Find suitable hall
+                        const suitableHall = halls.find(hall => 
+                            (!classItem.computer || hall.computer) &&
+                            (!classItem.accessibility || hall.accessibility) &&
+                            hall.capacity >= classItem.students
+                        );
+
+                        if (suitableHall) {
+                            // Find available time slot
+                            for (const day of weekDays) {
+                                for (const time of timeSlots) {
+                                    const slot = schedule.find(s => 
+                                        s.hall === suitableHall.name &&
+                                        s.day === day &&
+                                        s.time === time
+                                    );
+
+                                    if (!slot && assignedHours < remainingHours) {
+                                        schedule.push({
+                                            courseId: classItem.courseId,
+                                            instructor: classItem.instructor,
+                                            hall: suitableHall.name,
+                                            day: day,
+                                            time: time,
+                                            duration: '1h'
+                                        });
+                                        assignedHours++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return schedule;
+            }
+
+            // Add class schedule optimisation handler
+            const classOptimiseBtn = document.getElementById('class-optimise-btn');
+            if (classOptimiseBtn) {
+                classOptimiseBtn.addEventListener('click', function() {
+                    // Get class and hall data from the system
+                    const classes = []; // Get your class data
+                    const halls = []; // Get your hall data
+                    const optimisedSchedule = optimiseClassSchedule(classes, halls);
+                    renderClassTimetable(optimisedSchedule);
+                });
+            }
+
+            // Class scheduling toggle functionality
             const classManualBtn = document.getElementById('class-manual-toggle-btn');
             const classCsvBtn = document.getElementById('class-csv-toggle-btn');
             const classManualSection = document.getElementById('class-manual-section');
             const classCsvSection = document.getElementById('class-csv-section');
 
-            classManualBtn.addEventListener('click', function() {
-                classManualBtn.classList.add('active');
-                classCsvBtn.classList.remove('active');
-                classManualSection.style.display = 'block';
-                classCsvSection.style.display = 'none';
-            });
+            if (classManualBtn && classCsvBtn && classManualSection && classCsvSection) {
+                classManualBtn.addEventListener('click', function() {
+                    classManualBtn.classList.add('active');
+                    classCsvBtn.classList.remove('active');
+                    classManualSection.style.display = 'block';
+                    classCsvSection.style.display = 'none';
+                });
 
-            classCsvBtn.addEventListener('click', function() {
-                classCsvBtn.classList.add('active');
-                classManualBtn.classList.remove('active');
-                classCsvSection.style.display = 'block';
-                classManualSection.style.display = 'none';
-            });
-
-            hallForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent page refresh
-
-                // Get values
-                const hallName = document.getElementById('hall-name').value.trim();
-                const hallSize = document.getElementById('hall-size').value.trim();
-
-                if (!hallName || !hallSize) return; // Simple validation
-
-                // Create hall card
-                const li = document.createElement('li');
-                li.className = 'entry-card';
-                li.innerHTML = `<b>${hallName}</b> (Capacity: ${hallSize})`;
-
-                // Add to hall list
-                hallList.appendChild(li);
-
-                // Clear form
-                hallForm.reset();
-            });
+                classCsvBtn.addEventListener('click', function() {
+                    classCsvBtn.classList.add('active');
+                    classManualBtn.classList.remove('active');
+                    classCsvSection.style.display = 'block';
+                    classManualSection.style.display = 'none';
+                });
+            }
         });
     </script>
 </body>
